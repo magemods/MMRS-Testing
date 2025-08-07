@@ -35,8 +35,13 @@ typedef struct Zbank_t{
     int bankId;
     int bankSize;
     unsigned char bankData[MAX_DATA_SIZE];
-    int metaSize;
-    unsigned char metaData[MAX_DATA_SIZE];
+    s8 medium;
+    s8 cachePolicy;
+    u8 sampleBank1;
+    u8 sampleBank2;
+    u8 numInstruments;
+    u8 numDrums;
+    u16 numSoundEffects;
 } Zbank;
 
 

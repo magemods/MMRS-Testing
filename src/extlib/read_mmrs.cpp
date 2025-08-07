@@ -17,7 +17,7 @@
 
 sqlite3 *db;
 
-extern "C" 
+extern "C"
 {
     DLLEXPORT uint32_t recomp_api_version = 1;
 }
@@ -44,21 +44,21 @@ bool read_mmrs(fs::directory_entry file)
     bool found_zbank = false;
 
     std::vector<unsigned char> zbankBuffer;
-    std::vector<unsigned char> bankmetaBuffer;    
+    std::vector<unsigned char> bankmetaBuffer;
 
     for (int i = 0; i < MAX_DATA_SIZE; i++)
     {
         zseq.data[i] = 0xFF;
     }
 
-    try 
+    try
     {
         int zip_filesize = fs::file_size(in_path);
         std::string zip_filename = in_path.filename().stem().string();
 
         mmrs_util::debug() << "File size: " << zip_filesize << "\n";
 
-        for (int i = 0; i < zip_filename.length(); i++) 
+        for (int i = 0; i < zip_filename.length(); i++)
         {
             mmrs.songName[i] = zip_filename[i];
         }
@@ -82,12 +82,12 @@ bool read_mmrs(fs::directory_entry file)
         // Hooray!
         mmrs_util::debug() << "Successfully opened ZIP with " << num_files << " files!\n";
 
-        for (int i = 0; i < num_files; i++) 
+        for (int i = 0; i < num_files; i++)
         {
             mz_zip_archive_file_stat stat;
 
             mz_status = mz_zip_reader_file_stat(&mz_archive, i, &stat);
-            if (!mz_status) 
+            if (!mz_status)
             {
                 throw std::runtime_error("Could not read file");
             }
@@ -100,25 +100,25 @@ bool read_mmrs(fs::directory_entry file)
             mmrs_util::debug() << "\nReading file " <<  filename << " with size " << filesize << "\n";
 
             mz_status = mz_zip_reader_extract_to_mem(&mz_archive, i, filebuffer.data(), filebuffer.size(), 0);
-            if (!mz_status) 
+            if (!mz_status)
             {
                 throw std::runtime_error("mz_zip_reader_extract_to_mem() failed");
             }
 
-            if (filename.ends_with(".zseq") || filename.ends_with(".seq")) 
+            if (filename.ends_with(".zseq") || filename.ends_with(".seq"))
             {
                 mmrs_util::debug() << "Reading sequence file\n";
 
                 // Make sure the extraction really succeeded.
                 mmrs_util::debug() << "Data was: ";
-                for (int j = 0; j < 16; j++) 
+                for (int j = 0; j < 16; j++)
                 {
                     if (j >= filebuffer.size()) break;
                     printf("%hhx ", filebuffer[j]);
                 }
                 mmrs_util::debug() << "...\n";
 
-                if ((unsigned char)filebuffer.at(0) != 0xD3 || (unsigned char)filebuffer.at(1) != 0x20) 
+                if ((unsigned char)filebuffer.at(0) != 0xD3 || (unsigned char)filebuffer.at(1) != 0x20)
                 {
                     throw std::runtime_error("Invalid zseq header");
                 }
@@ -128,7 +128,7 @@ bool read_mmrs(fs::directory_entry file)
                     throw std::runtime_error("File is too large - max 32 KiB");
                 }
 
-                for (int j = 0; j < filesize; j++) 
+                for (int j = 0; j < filesize; j++)
                 {
                     zseq.data[j] = (unsigned char)filebuffer[j];
                 }
@@ -138,7 +138,7 @@ bool read_mmrs(fs::directory_entry file)
                 mmrs.bankNo = std::stoi(filename, 0, 16);
                 zseq.size = filesize;
             }
-            else if (filename == "categories.txt") 
+            else if (filename == "categories.txt")
             {
                 mmrs_util::debug() << "Reading categories.txt file\n";
                 mmrs_util::debug() << "Categories: ";
@@ -150,10 +150,10 @@ bool read_mmrs(fs::directory_entry file)
                     mmrs.categories[j] = false;
                 }
 
-                while (c != nullptr) 
+                while (c != nullptr)
                 {
                     int cat = std::stoi(std::string(c));
-                    if (cat < 256) 
+                    if (cat < 256)
                     {
                         mmrs.categories[cat] = true;
                         mmrs_util::debug() << cat << " ";
@@ -162,7 +162,7 @@ bool read_mmrs(fs::directory_entry file)
                 }
                 mmrs_util::debug() << "\n";
             }
-            else if (filename.ends_with(".zbank")) 
+            else if (filename.ends_with(".zbank"))
             {
                 found_zbank = true;
                 mmrs_util::debug() << "Reading zbank file" << std::endl;
@@ -171,7 +171,7 @@ bool read_mmrs(fs::directory_entry file)
 
                 // Make sure the extraction really succeeded.
                 mmrs_util::debug() << "Data was: ";
-                for (int j = 0; j < 16; j++) 
+                for (int j = 0; j < 16; j++)
                 {
                     if (j >= filebuffer.size()) break;
                     printf("%hhx ", filebuffer[j]);
@@ -183,14 +183,14 @@ bool read_mmrs(fs::directory_entry file)
                     throw std::runtime_error("File is too large - max 32 KiB");
                 }
 
-                for (int j = 0; j < filesize; j++) 
+                for (int j = 0; j < filesize; j++)
                 {
                     zbankBuffer[j] = (unsigned char)filebuffer[j];
                 }
 
                 mmrs_util::debug() << "Successfully read!\n";
             }
-            else if (filename.ends_with(".bankmeta")) 
+            else if (filename.ends_with(".bankmeta"))
             {
                 found_bankmeta = true;
                 mmrs_util::debug() << "Reading zbank file" << std::endl;
@@ -199,19 +199,19 @@ bool read_mmrs(fs::directory_entry file)
 
                 // Make sure the extraction really succeeded.
                 mmrs_util::debug() << "Data was: ";
-                for (int j = 0; j < 16; j++) 
+                for (int j = 0; j < 16; j++)
                 {
                     if (j >= filebuffer.size()) break;
                     printf("%hhx ", filebuffer[j]);
                 }
                 mmrs_util::debug() << "...\n";
 
-                if (filesize > MAX_DATA_SIZE)
+                if (filesize != 8)
                 {
-                    throw std::runtime_error("File is too large - max 32 KiB");
+                    throw std::runtime_error("Bankmeta should be 8 bytes");
                 }
 
-                for (int j = 0; j < filebuffer.size(); j++) 
+                for (int j = 0; j < filebuffer.size(); j++)
                 {
                     if (j >= filebuffer.size()) break;
                     bankmetaBuffer[j] = (unsigned char)filebuffer[j];
@@ -219,7 +219,7 @@ bool read_mmrs(fs::directory_entry file)
 
                 mmrs_util::debug() << "Successfully read!\n";
             }
-            else 
+            else
             {
                 mmrs_util::debug() << "Unknown filetype " << filename << std::endl;
             }
@@ -228,7 +228,7 @@ bool read_mmrs(fs::directory_entry file)
         success = true;
         // Update the database
         int mmrsId = insert_mmrs(mmrs, zseq, file);
-        
+
         if (found_zbank && found_bankmeta)
         {
             Zbank zbank;
@@ -240,15 +240,20 @@ bool read_mmrs(fs::directory_entry file)
                 zbank.bankData[j] = 0xFF;
                 zbank.metaData[j] = 0xFF;
             }
-            
-            for (int j = 0; j < zbank.bankSize; j++) 
+
+            for (int j = 0; j < zbank.bankSize; j++)
             {
                 zbank.bankData[j] = zbankBuffer[j];
             }
-            for (int j = 0; j < zbank.metaSize; j++) 
-            {
-                zbank.metaData[j] = bankmetaBuffer[j];
-            }
+
+            zbank.medium = bankmetaBuffer[0];
+            zbank.cachePolicy = bankmetaBuffer[1];
+            zbank.sampleBank1 = bankmetaBuffer[2];
+            zbank.sampleBank2 = bankmetaBuffer[3];
+            zbank.numInstruments = bankmetaBuffer[4];
+            zbank.numDrums = bankmetaBuffer[5];
+            zbank.numSoundEffects = bankmetaBuffer[6] << 8 | bankmetaBuffer[7];
+
             success = insert_zbank(zbank, mmrsId);
         }
         else if (found_zbank ^ found_bankmeta)
@@ -257,20 +262,20 @@ bool read_mmrs(fs::directory_entry file)
             mmrs_util::warning() << ".bankmeta: " << found_bankmeta << std::endl;
             mmrs_util::warning() << ".zbank: " << found_zbank << std::endl;
         }
-    } 
-    catch (const std::exception &e) 
+    }
+    catch (const std::exception &e)
     {
         std::cerr << "MMRS Read error: " << e.what() << "\n";
         success = false;
-    } 
-    catch (...) 
+    }
+    catch (...)
     {
         std::cerr << "MMRS Read error: Unknown error\n";
         success = false;
     }
 
     mz_error = mz_zip_get_last_error(&mz_archive);
-    if (mz_error != MZ_ZIP_NO_ERROR) 
+    if (mz_error != MZ_ZIP_NO_ERROR)
     {
         mmrs_util::debug() << "mz_error: " << mz_zip_get_error_string(mz_error) << "\n";
     }
@@ -298,7 +303,7 @@ int read_seq_directory(const char* dbPath)
     int sqlErrCode;
     std::unordered_set<std::string> filenames;
 
-    if(fs::exists(dir)) 
+    if(fs::exists(dir))
     {
         int i = 0;
         for(const fs::directory_entry entry: fs::directory_iterator(dir)) {
@@ -309,11 +314,11 @@ int read_seq_directory(const char* dbPath)
             const char* songName = songNameStr.c_str();
 
             // If file has an extension other than .mmrs, print that to the console and continue
-            if (entry.path().extension() != ".mmrs") 
+            if (entry.path().extension() != ".mmrs")
             {
                 printf("File %s is not a .mmrs file, skipping.", filename.c_str());
             }
-            else 
+            else
             {
                 filenames.insert(filename);
                 if (check_mmrs_exists(entry))
@@ -321,13 +326,13 @@ int read_seq_directory(const char* dbPath)
                     i++;
                     continue;
                 }
-                else 
+                else
                 {
                     mmrs_util::debug() << fs::absolute(entry.path()) << std::endl;
 
                     bool success = read_mmrs(entry);
 
-                    if (!success) 
+                    if (!success)
                     {
                         mmrs_util::error() << "Could not read file " << entry.path().filename().string();
                         continue;
@@ -349,7 +354,7 @@ int read_seq_directory(const char* dbPath)
         int mmrsCount = count_mmrs();
         std::string dbFiles[mmrsCount];
         int dbIds[mmrsCount];
-        
+
         retrieve_filenames(dbIds, dbFiles);
 
         bool success = false;
@@ -364,8 +369,8 @@ int read_seq_directory(const char* dbPath)
         }
 
         return count_mmrs();
-    } 
-    else 
+    }
+    else
     {
         mmrs_util::error() << "\ndir" << fs::current_path().string() << "\\" << dir.string() << "does not exist.\n";
         return -2;
@@ -406,7 +411,7 @@ RECOMP_DLL_FUNC(sql_init)
 RECOMP_DLL_FUNC(read_mmrs_files)
 {
     mmrs_util::set_log_level(mmrs_util::LOG_DEBUG);
-    
+
     if (mmrs_util::gLogLevel >= mmrs_util::LOG_DEBUG)
     {
         printf(START_PARA);
@@ -416,9 +421,9 @@ RECOMP_DLL_FUNC(read_mmrs_files)
 
     std::string dbPathStr = RECOMP_ARG_STR(0);
     const char *dbPath = dbPathStr.c_str();
-    
+
     bool initDb = false;
-    
+
     printf("Calling init_mmrs_cache!");
     try
     {
@@ -430,7 +435,7 @@ RECOMP_DLL_FUNC(read_mmrs_files)
             printf("Error initalizing music DB: %s\n", e.what());
         RECOMP_RETURN(int, -1);
     }
-    
+
     int numMmrs = read_seq_directory(dbPath);
 
     if (mmrs_util::gLogLevel >= mmrs_util::LOG_DEBUG)
@@ -500,7 +505,7 @@ RECOMP_DLL_FUNC(load_zbank)
     int zbankId = RECOMP_ARG(int, 1);
 
     bool success = _load_zbank(zbankAddr, zbankId);
-    
+
     if(success)
     {
         RECOMP_RETURN(bool, true);
